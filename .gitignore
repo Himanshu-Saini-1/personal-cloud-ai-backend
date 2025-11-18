@@ -1,5 +1,5 @@
 node_modules/ 
 .env 
-ServiceAccountKey.json 
+
 minio.exe 
 scripts/ 
