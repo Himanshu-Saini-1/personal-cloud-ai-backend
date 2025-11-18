@@ -185,7 +185,8 @@ export const downloadEncrypted = async (req, res) => {
 
     // 🔥 Return ALL required fields for frontend decryption
     res.json({
-      downloadUrl: url,
+      // downloadUrl: url,
+      fileId: doc._id,
       nameEnc: doc.nameEnc,
       nameIv: doc.nameIv,
       contentIv: doc.contentIv,
@@ -235,5 +236,35 @@ export const deleteNode = async (req, res) => {
   } catch (err) {
     console.error("Delete failed:", err);
     res.status(500).json({ error: "Delete failed", details: err.message });
+  }
+};
+
+export const getRawEncryptedFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const doc = await File.findOne({
+      _id: id,
+      ownerUid: req.user.uid,
+      isFolder: false,
+    });
+
+    if (!doc) {
+      return res.status(404).json({ error: "File not found or access denied" });
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: MINIO_BUCKET,
+      Key: doc.storagePath,
+    });
+
+    const response = await s3Client.send(command);
+
+    res.setHeader("Content-Type", "application/octet-stream");
+
+    response.Body.pipe(res);
+  } catch (err) {
+    console.error("Raw download failed:", err);
+    res.status(500).json({ error: "Failed to download raw encrypted file" });
   }
 };
